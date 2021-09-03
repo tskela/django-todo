@@ -1,6 +1,8 @@
 // import logo from './logo.svg';
 import './App.css';
 import React, { Component } from "react"
+import Modal from "./components/Modal";
+import axios from "axios";
 
 // const todoItems = [
 //   {
@@ -35,9 +37,10 @@ class App extends Component {
         description: "",
         completed: false
       },
-      todoList: []
+      todoList: [],
+      modal: false,
     }
-  }
+  };
 
   async componentDidMount() {
     try {
@@ -50,6 +53,35 @@ class App extends Component {
     catch (e) {
       console.log(e)
     }
+  };
+
+  toggle = () => {
+    this.setState({ modal: !this.state.modal });
+  };
+
+  handleSubmit = item => {
+    this.toggle();
+
+    if (item.id) {
+      axios
+        .put(`http://localhost:8000/api/todos/${item.id}`, item)
+      return;
+    }
+
+    axios
+      .post("http://localhost:8000/api/todos/", item)
+      .then(() => fetch('http://localhost:8000/api/todos/'))
+      .then((todos) => todos.json())
+      .then((todoList) => this.setState({ todoList }))
+  };
+
+  createItem = () => {
+    const item = { title: "", description: "", completed: false };
+    this.setState({ activeItem: item, modal: !this.state.modal })
+  };
+
+  displayCompleted = status => {
+    this.setState({ viewCompleted: status })
   }
 
   render() {
@@ -59,17 +91,38 @@ class App extends Component {
     )
 
     const todos = newItems.map(item => (
-      <li>
+      <li key={item.id}>
         {this.state.viewCompleted ? "completed-todo" : ""}
-        {item.title + ": "}
-        {item.description}
+        {item.title}
       </li>
     ))
 
+    const modal = this.state.modal ? (
+      <Modal
+        activeItem={this.state.activeItem}
+        toggle={this.toggle}
+        onSave={this.handleSubmit}
+      />
+    ) : null
+
     return (
-      <ul>
-        {todos}
-      </ul>
+      <div>
+        <button onClick={this.createItem}>Add Task</button>
+        <button
+          onClick={() => this.displayCompleted(true)}
+        >
+          Complete
+        </button>
+        <button
+          onClick={() => this.displayCompleted(false)}
+        >
+          Incomplete
+        </button>
+        <ul>
+          {todos}
+        </ul>
+        {modal}
+      </div>
     )
   };
 }
